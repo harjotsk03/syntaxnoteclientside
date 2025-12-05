@@ -12,6 +12,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Star, GitBranch } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import RepoCard from "@/components/repo-card";
+import { getAuthUser, getRepos } from "@/hooks/useGitHubRepos";
+import { redirect } from "next/navigation";
 
 interface GitHubRepo {
   id: number;
@@ -70,13 +72,16 @@ export default async function Home() {
           />
           <Breadcrumb>
             <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
-              </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Overview</BreadcrumbPage>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbLink href="/repositories">
+                  <BreadcrumbPage>Repositories</BreadcrumbPage>
+                </BreadcrumbLink>
               </BreadcrumbItem>
+              {/* <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Repositories</BreadcrumbPage>
+              </BreadcrumbItem> */}
             </BreadcrumbList>
           </Breadcrumb>
         </div>
