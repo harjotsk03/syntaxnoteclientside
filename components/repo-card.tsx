@@ -1,28 +1,8 @@
-// app/(protected)/dashboard/page.tsx
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Star, GitBranch } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
-import RepoCard from "@/components/repo-card";
-import { getAuthUser, getRepos } from "@/hooks/useGitHubRepos";
-import { redirect } from "next/navigation";
+// components/repo-card.tsx
+"use client";
 
-interface GitHubRepo {
-  id: number;
-  name: string;
-  description: string;
-  url: string;
-  stars: number;
-  language: string;
-}
+import { Star, GitBranch } from "lucide-react";
+import Link from "next/link";
 
 interface Repo {
   id: number;
@@ -33,88 +13,39 @@ interface Repo {
   language: string | null;
 }
 
-interface UserMetadata {
-  name: string;
-  user_name: string;
-  avatar_url: string;
-  bio: string;
-  public_repos: number;
-  followers: number;
+interface RepoCardProps {
+  repo: Repo;
+  owner: string;
 }
 
-export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return <div className="p-4">Not authenticated</div>;
-  }
-
-  const metadata = user.user_metadata as UserMetadata;
-  const username: string = metadata?.user_name;
-
-  // Fetch repos from GitHub
-  const reposRes = await fetch(
-    `https://api.github.com/users/${username}/repos?sort=stars&per_page=12`
-  );
-  const reposData: Repo[] = await reposRes.json();
-
+export default function RepoCard({ repo, owner }: RepoCardProps) {
   return (
-    <>
-      <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-        <div className="flex items-center gap-2 px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator
-            orientation="vertical"
-            className="mr-2 data-[orientation=vertical]:h-4"
-          />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="/repositories">
-                  <BreadcrumbPage>Repositories</BreadcrumbPage>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              {/* <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Repositories</BreadcrumbPage>
-              </BreadcrumbItem> */}
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-      </header>
-
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        {/* User Profile Card */}
-        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg p-6 border border-blue-500/20">
-          <div className="flex gap-4 items-start">
-            <img
-              src={metadata?.avatar_url}
-              alt={metadata?.name}
-              className="w-16 h-16 rounded-full"
-            />
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold">{metadata?.name}</h1>
-              <p className="text-sm text-muted-foreground">@{username}</p>
-              {metadata?.bio && <p className="mt-1 text-sm">{metadata.bio}</p>}
-              <p className="text-xs text-muted-foreground mt-1">{user.email}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Repositories Grid */}
-        <div>
-          <h2 className="text-xl font-bold mb-4">Repositories</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {reposData.map((repo) => (
-              <RepoCard key={repo.id} repo={repo} owner={username} />
-            ))}
-          </div>
+    <Link
+      href={`/repositories/${encodeURIComponent(repo.name)}`}
+      className="bg-muted/50 rounded-lg p-4 hover:bg-muted transition-colors border border-border hover:border-primary cursor-pointer group"
+    >
+      <div className="flex items-start justify-between mb-2">
+        <h3 className="font-semibold text-sm truncate flex-1 group-hover:text-primary transition-colors">
+          {repo.name}
+        </h3>
+        <GitBranch className="w-4 h-4 text-muted-foreground flex-shrink-0 ml-2" />
+      </div>
+      {repo.description && (
+        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+          {repo.description}
+        </p>
+      )}
+      <div className="flex items-center justify-between text-xs">
+        {repo.language && (
+          <span className="bg-secondary px-2 py-1 rounded text-muted-foreground">
+            {repo.language}
+          </span>
+        )}
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <Star className="w-3 h-3" />
+          <span>{repo.stargazers_count}</span>
         </div>
       </div>
-    </>
+    </Link>
   );
 }

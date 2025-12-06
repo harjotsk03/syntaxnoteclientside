@@ -14,6 +14,8 @@ import { createClient } from "@/utils/supabase/server";
 import RepoCard from "@/components/repo-card";
 import { getAuthUser, getRepos } from "@/hooks/useGitHubRepos";
 import { redirect } from "next/navigation";
+import RepoList from "@/components/repo-list";
+import RepoTable from "@/components/repo-table";
 
 interface GitHubRepo {
   id: number;
@@ -57,7 +59,7 @@ export default async function Home() {
 
   // Fetch repos from GitHub
   const reposRes = await fetch(
-    `https://api.github.com/users/${username}/repos?sort=stars&per_page=12`
+    `https://api.github.com/users/${username}/repos?sort=stars&per_page=10`
   );
   const reposData: Repo[] = await reposRes.json();
 
@@ -105,15 +107,8 @@ export default async function Home() {
           </div>
         </div>
 
-        {/* Repositories Grid */}
-        <div>
-          <h2 className="text-xl font-bold mb-4">Repositories</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {reposData.map((repo) => (
-              <RepoCard key={repo.id} repo={repo} owner={username} />
-            ))}
-          </div>
-        </div>
+        {/* <RepoList repos={reposData} owner={username} /> */}
+        <RepoTable repos={[]} username={username} />
       </div>
     </>
   );

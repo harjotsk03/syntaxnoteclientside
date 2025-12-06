@@ -24,10 +24,11 @@ function CollapsibleContent({
 }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>) {
   return (
     <CollapsiblePrimitive.CollapsibleContent
+      suppressHydrationWarning
       data-slot="collapsible-content"
       {...props}
     />
-  )
+  );
 }
 
 export { Collapsible, CollapsibleTrigger, CollapsibleContent }

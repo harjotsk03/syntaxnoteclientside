@@ -20,7 +20,7 @@ export default async function ProtectedLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <main>{children}</main>
+        <main className="py-4 px-4">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

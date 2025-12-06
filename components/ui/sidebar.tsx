@@ -513,6 +513,7 @@ function SidebarMenuButton({
 
   const button = (
     <Comp
+      suppressHydrationWarning
       data-slot="sidebar-menu-button"
       data-sidebar="menu-button"
       data-size={size}
@@ -520,7 +521,7 @@ function SidebarMenuButton({
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
       {...props}
     />
-  )
+  );
 
   if (!tooltip) {
     return button
