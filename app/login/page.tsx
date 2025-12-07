@@ -4,20 +4,31 @@ import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye } from "lucide-react";
-import { useState } from "react";
+import { Eye, Github } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function LoginPage() {
   const supabase = createClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [gitHubLoading, setGitHubLoading] = useState(false);
+  const [lastLoginUsed, setLastLoginUsed] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLastLoginUsed(localStorage.getItem("lastLoginUsed"));
+  }, []);
 
   const handleGitHubLogin = async () => {
+    setGitHubLoading(true);
+    localStorage.setItem("lastLoginUsed", "github");
+
     await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
         redirectTo: `${location.origin}/auth/callback`,
+        scopes: "repo read:user user:email",
       },
     });
   };
@@ -52,28 +63,30 @@ export default function LoginPage() {
 
         {/* OAuth Buttons */}
         <div className="space-y-3">
-          <Button
-            onClick={handleGitHubLogin}
-            variant="outline"
-            className="w-full"
-          >
-            <svg
-              className="w-5 h-5 mr-3"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
-            </svg>
-            Sign in with GitHub
-          </Button>
+          <div className="relative">
+            {lastLoginUsed === "github" && (
+              <span className="absolute -top-6 right-4 bg-green-900 text-chart-2 z-50 text-xs px-2.5 py-1 rounded-t-sm">
+                Last used
+              </span>
+            )}
 
-          {/* <Button
-            variant="outline"
-            className="w-full h-12 bg-transparent border-zinc-800 hover:bg-zinc-900 text-white"
-            onClick={handleGitHubLogin}
-          >
-            Sign in with SSO
-          </Button> */}
+            <Button
+              onClick={handleGitHubLogin}
+              variant={gitHubLoading ? "secondary" : "outline"}
+              disabled={gitHubLoading}
+              className="w-full relative hover:cursor-pointer"
+            >
+              {gitHubLoading && <Spinner />}
+              Sign in with GitHub
+              <svg
+                className="w-5 h-5 mr-1"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+              </svg>
+            </Button>
+          </div>
         </div>
 
         {/* Email/Password Form */}
@@ -118,7 +131,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full hover:cursor-pointer">
             Sign in
           </Button>
         </form>

@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -14,18 +16,15 @@ import {
   VisibilityState,
 } from "@tanstack/react-table";
 
-import { ArrowUpDown, ChevronDown, Star } from "lucide-react";
+import { ArrowUpDown, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import {
   Table,
   TableBody,
@@ -35,6 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useRouter } from "next/navigation";
+import { fetchReposAction } from "@/actions/repo-actions";
 
 interface Repo {
   id: number;
@@ -46,39 +46,53 @@ interface Repo {
 }
 
 interface RepoTableProps {
-  repos: Repo[];
   username: string;
+  token: string;
+  initialRepos: Repo[];
 }
 
-export default function RepoTable({ repos,username }: RepoTableProps) {
-    const router = useRouter();
-    const [page, setPage] = React.useState(1);
-    const [repoData, setRepoData] = React.useState<Repo[]>(repos || []);
-    const [loading, setLoading] = React.useState(false);
+export default function RepoTable({
+  username,
+  token,
+  initialRepos,
+}: RepoTableProps) {
+  const router = useRouter();
+  const [repos, setRepos] = useState<Repo[]>(initialRepos);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
-    React.useEffect(() => {
-      const fetchRepos = async () => {
-        setLoading(true);
-        try {
-          const res = await fetch(
-            `/api/github/repos?username=${username}&page=${page}&per_page=10`
-          );
-          const data: Repo[] = await res.json();
-          setRepoData(data);
-        } finally {
-          setLoading(false);
-        }
-      };
+  // Load next page of repos
+  const loadNextPage = async () => {
+    setLoading(true);
+    try {
+      const newRepos = await fetchReposAction(username, token, page + 1);
+      setRepos(newRepos);
+      setPage(page + 1);
+    } catch (error) {
+      toast.error("Failed to load repositories");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      fetchRepos();
-    }, [page, username]);
+  // Load previous page
+  const loadPreviousPage = async () => {
+    if (page === 1) return;
 
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+    setLoading(true);
+    try {
+      const prevRepos = await fetchReposAction(username, token, page - 1);
+      setRepos(prevRepos);
+      setPage(page - 1);
+    } catch (error) {
+      toast.error("Failed to load repositories");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const columns: ColumnDef<Repo>[] = [
     {
@@ -117,28 +131,27 @@ export default function RepoTable({ repos,username }: RepoTableProps) {
       header: "Language",
       cell: ({ row }) => row.original.language || "-",
     },
-    // {
-    //   accessorKey: "stargazers_count",
-    //   header: ({ column }) => (
-    //     <Button
-    //       variant="ghost"
-    //       className="flex items-center gap-1"
-    //       onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-    //     >
-    //       Stars <ArrowUpDown className="w-4 h-4" />
-    //     </Button>
-    //   ),
-    //   cell: ({ row }) => (
-    //     <div className="flex items-center gap-1">
-    //       <Star className="w-4 h-4 text-yellow-500" />
-    //       {row.original.stargazers_count}
-    //     </div>
-    //   ),
-    // },
+    {
+      accessorKey: "stargazers_count",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          className="flex items-center gap-1"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Stars <ArrowUpDown className="w-4 h-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          ⭐ {row.original.stargazers_count}
+        </div>
+      ),
+    },
   ];
 
   const table = useReactTable({
-    data: repoData,
+    data: repos, // ✅ Fixed: use repos instead of undefined repoData
     columns,
     state: { sorting, columnFilters, columnVisibility },
     onSortingChange: setSorting,
@@ -152,7 +165,7 @@ export default function RepoTable({ repos,username }: RepoTableProps) {
 
   return (
     <div className="w-full h-max">
-      {/* Search & Column Hiding */}
+      {/* Search & Filters */}
       <div className="flex items-center mb-4 gap-2">
         <Input
           placeholder="Filter by name..."
@@ -163,6 +176,7 @@ export default function RepoTable({ repos,username }: RepoTableProps) {
           className="max-w-sm"
         />
 
+        {/* Column Toggle */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
@@ -207,16 +221,37 @@ export default function RepoTable({ repos,username }: RepoTableProps) {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.length ? (
+            {loading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
                   className="cursor-pointer"
-                  onClick={() =>
-                    router.push(
-                      `/repositories/${encodeURIComponent(row.original.name)}`
-                    )
-                  }
+                  onClick={() => {
+                    toast.promise(
+                      new Promise((resolve) => {
+                        router.push(
+                          `/repositories/${encodeURIComponent(
+                            row.original.name
+                          )}`
+                        );
+                        resolve(true);
+                      }),
+                      {
+                        loading: "Loading repository…",
+                        success: "Repository loaded!",
+                        error: "Failed to load repository.",
+                      }
+                    );
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -247,7 +282,7 @@ export default function RepoTable({ repos,username }: RepoTableProps) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+          onClick={loadPreviousPage}
           disabled={page === 1 || loading}
         >
           Previous
@@ -255,8 +290,8 @@ export default function RepoTable({ repos,username }: RepoTableProps) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setPage(page + 1)}
-          disabled={repoData.length < 10 || loading}
+          onClick={loadNextPage}
+          disabled={repos.length < 10 || loading}
         >
           Next
         </Button>

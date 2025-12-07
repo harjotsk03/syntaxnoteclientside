@@ -27,7 +27,7 @@ import {
 import { useGitHubUser } from "@/hooks/useGitHubUser";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user, loading, error } = useGitHubUser();
+  const { user, loading, error, hydrated } = useGitHubUser();
 
   const data = {
     teams: [
@@ -49,41 +49,45 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       // { title: "Settings", url: "#", icon: Settings2 },
     ],
   };
-  return (
-    <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
-      </SidebarHeader>
+  if (hydrated) {
+    return (
+      <Sidebar collapsible="icon" {...props}>
+        <SidebarHeader>
+          <TeamSwitcher teams={data.teams} />
+        </SidebarHeader>
 
-      <SidebarContent>
-        <NavMain items={data.navMain} />
-      </SidebarContent>
+        <SidebarContent>
+          <NavMain items={data.navMain} />
+        </SidebarContent>
 
-      <SidebarFooter>
-        {/* ----------------------------- */}
-        {/*        USER SECTION           */}
-        {/* ----------------------------- */}
+        <SidebarFooter>
+          {/* ----------------------------- */}
+          {/*        USER SECTION           */}
+          {/* ----------------------------- */}
 
-        {loading && (
-          <div className="p-4 text-xs text-muted-foreground">Loading user…</div>
-        )}
+          {loading && (
+            <div className="p-4 text-xs text-muted-foreground">
+              Loading user…
+            </div>
+          )}
 
-        {error && (
-          <div className="p-4 text-xs text-red-500">Failed to load user</div>
-        )}
+          {error && (
+            <div className="p-4 text-xs text-red-500">Failed to load user</div>
+          )}
 
-        {user && (
-          <NavUser
-            user={{
-              name: user.name,
-              email: user.email,
-              avatar: user.avatarUrl,
-            }}
-          />
-        )}
-      </SidebarFooter>
+          {user && (
+            <NavUser
+              user={{
+                name: user.name,
+                email: user.email,
+                avatar: user.avatarUrl,
+              }}
+            />
+          )}
+        </SidebarFooter>
 
-      <SidebarRail />
-    </Sidebar>
-  );
+        <SidebarRail />
+      </Sidebar>
+    );
+  }
 }

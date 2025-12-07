@@ -146,7 +146,7 @@ Key files:
   };
 
   return (
-    <>
+    <div className="fade-up">
       <Sheet open={chatBotModalOpen} onOpenChange={setChatBotModalOpen}>
         <SheetContent
           side="right"
@@ -397,6 +397,6 @@ Key files:
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

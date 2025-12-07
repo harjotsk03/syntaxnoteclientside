@@ -27,14 +27,29 @@ export function useGitHubUser() {
   const [repos, setRepos] = useState<GitHubRepo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false); // ⭐ NEW
+
+  useEffect(() => {
+    // Load cached user
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("github_user");
+      if (cached) {
+        setUser(JSON.parse(cached));
+        setLoading(false);
+      }
+    }
+
+    setHydrated(true); // ⭐ mark hydration complete
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (user) return; // Skip if cached
+
       try {
         const supabase = createClient();
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser();
+        const { data } = await supabase.auth.getUser();
+        const authUser = data.user;
 
         if (!authUser) {
           setError("Not authenticated");
@@ -45,8 +60,7 @@ export function useGitHubUser() {
         const metadata = authUser.user_metadata;
         const username = metadata?.user_name;
 
-        // Set user data
-        setUser({
+        const newUser = {
           name: metadata?.name || "",
           username: username || "",
           email: authUser.email || "",
@@ -55,33 +69,22 @@ export function useGitHubUser() {
           publicRepos: metadata?.public_repos || 0,
           followers: metadata?.followers || 0,
           following: metadata?.following || 0,
-        });
+        };
 
-        // Fetch repos from GitHub
-        const reposRes = await fetch(
-          `https://api.github.com/users/${username}/repos?sort=stars&per_page=12`
-        );
-        const reposData = await reposRes.json();
+        if (typeof window !== "undefined") {
+          localStorage.setItem("github_user", JSON.stringify(newUser));
+        }
 
-        const formattedRepos = reposData.map((repo: any) => ({
-          id: repo.id,
-          name: repo.name,
-          description: repo.description || "No description",
-          url: repo.html_url,
-          stars: repo.stargazers_count,
-          language: repo.language || "Unknown",
-        }));
-
-        setRepos(formattedRepos);
+        setUser(newUser);
         setLoading(false);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch data");
+        setError("Failed to load");
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, []);
+    if (hydrated && !user) fetchData();
+  }, [hydrated, user]);
 
-  return { user, repos, loading, error };
+  return { user, repos, loading, error, hydrated };
 }
