@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-inputBorderring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-inputBorderdestructive",
+  "inline-flex hover:cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-inputBorderring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-inputBorderdestructive",
   {
     variants: {
       variant: {
@@ -13,7 +13,7 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive text-white hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
-          "border border-inputBorderinputBorder bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-inputBorderinput dark:hover:bg-input/50",
+          "border border-inputBorderinputBorder bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-inputBorderinput dark:hover:bg-input/50",
         outlineGreen:
           "border border-inputBorderinputBorder bg-background hover:bg-chart-2/20 hover:cursor-pointer hover:text-background dark:bg-input/30 dark:border-inputBorderinput dark:hover:bg-chart-2 transition-all duration-300 ease-in-out",
         secondary:
