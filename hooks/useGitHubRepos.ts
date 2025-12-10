@@ -11,6 +11,10 @@ interface Repo {
   html_url: string;
   stargazers_count: number;
   language: string | null;
+  full_name: any;
+  default_branch: any;
+  permissions: any;
+  forks_count: any;
 }
 
 interface UseGitHubReposProps {
@@ -131,10 +135,68 @@ export function useGitHubRepos({ username, token }: UseGitHubReposProps) {
     searchRepos();
   }, [debouncedQuery, username, token, initialRepos]);
 
+  // --- NEW: Fetch full repo details by full_name ---
+  const fetchRepoDetails = async (fullName: string): Promise<Repo | null> => {
+    if (!token) {
+      console.error("No token provided");
+      return null;
+    }
+
+    try {
+      const res = await fetch(`https://api.github.com/repos/${fullName}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github.v3+json",
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        return data;
+      } else {
+        const errorText = await res.text();
+        console.error(
+          `Failed to fetch repo ${fullName}:`,
+          res.status,
+          errorText
+        );
+        return null;
+      }
+    } catch (error) {
+      console.error(`Error fetching repo ${fullName}:`, error);
+      return null;
+    }
+  };
+
+  // --- NEW: Batch fetch multiple repos ---
+  const fetchMultipleRepoDetails = async (
+    repoObjects: Array<{ full_name: string }>
+  ): Promise<Repo[]> => {
+    if (!token) {
+      console.error("No token provided");
+      return [];
+    }
+
+    try {
+      const promises = repoObjects.map((repo) =>
+        fetchRepoDetails(repo.full_name)
+      );
+      const results = await Promise.all(promises);
+
+      // Filter out null results
+      return results.filter((repo): repo is Repo => repo !== null);
+    } catch (error) {
+      console.error("Error fetching multiple repos:", error);
+      return [];
+    }
+  };
+
   return {
     repos,
     loading,
     search,
     setSearch,
+    fetchRepoDetails,
+    fetchMultipleRepoDetails,
   };
 }

@@ -23,86 +23,75 @@ import { Input } from "@/components/ui/input";
 import RepositoryDisplay from "@/components/RepositoryDisplay";
 import { GitHubImportDialog } from "@/components/ImportGitHubRepoModal";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { supabase } from "@/lib/supabaseClient";
+import { useGitHubRepos } from "@/hooks/useGitHubRepos";
 
-// Mock data - replace with Supabase data
-const mockProjects = [
-  // {
-  //   id: 1,
-  //   name: "studyspotr",
-  //   url: "studyspotr.vercel.app",
-  //   repo: "harjotsk03/studyspotr",
-  //   lastDeploy: "Oct 28",
-  //   branch: "main",
-  //   status: "ready" as const,
-  // },
-  // {
-  //   id: 2,
-  //   name: "roominate",
-  //   url: "roominate-green.vercel.app",
-  //   repo: "harjotsk03/roominate",
-  //   lastDeploy: "Dec 1",
-  //   branch: "main",
-  //   status: "ready" as const,
-  // },
-  // {
-  //   id: 3,
-  //   name: "secreloclientside",
-  //   url: "www.secrelo.com",
-  //   repo: "harjotsk03/secreloclientside",
-  //   lastDeploy: "Nov 3",
-  //   branch: "main",
-  //   status: "ready" as const,
-  // },
-  // {
-  //   id: 4,
-  //   name: "study-spotter",
-  //   url: "www.studyspotr.com",
-  //   repo: "harjotsk03/studyspotr",
-  //   lastDeploy: "Oct 28",
-  //   branch: "main",
-  //   status: "error" as const,
-  // },
-  // {
-  //   id: 5,
-  //   name: "harjot-portfolio-2024",
-  //   url: "www.harjotsinghkooner.com",
-  //   repo: "harjotsk03/portfolio2025",
-  //   lastDeploy: "Nov 15",
-  //   branch: "main",
-  //   status: "ready" as const,
-  // },
-  // {
-  //   id: 6,
-  //   name: "northsyncclientside",
-  //   url: "northsyncclientside.vercel.app",
-  //   repo: "harjotsk03/northsyncclient...",
-  //   lastDeploy: "Sep 12",
-  //   branch: "main",
-  //   status: "ready" as const,
-  // },
-];
+interface GitHubRepo {
+  id: number;
+  name: string;
+  url: string;
+  repo: string;
+  lastDeploy: string;
+  branch: string;
+  full_name: string;
+}
 
 export default function ProjectsPage() {
   const { userSecure } = useAuthUser();
   const [searchQuery, setSearchQuery] = useState("");
-  const [projects, setProjects] = useState(mockProjects);
-  const [filteredProjects, setFilteredProjects] = useState(mockProjects);
+  const [projects, setProjects] = useState<GitHubRepo[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<GitHubRepo[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isGitHubDialogOpen, setIsGitHubDialogOpen] = useState(false);
 
-  useEffect(() => {
-    const filtered = projects.filter(
-      (project) =>
-        project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.repo.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredProjects(filtered);
-  }, [searchQuery, projects]);
+  // Fix: Pass as an object with username and token properties
+  const { fetchRepoDetails, fetchMultipleRepoDetails } = useGitHubRepos({
+    username: userSecure?.username || null,
+    token: userSecure?.token || null,
+  });
 
   const handleGitHubImport = (repoName: string) => {
     console.log("Importing repo:", repoName);
   };
+
+  const getRepoitories = async () => {
+    try {
+      let { data: github_repos, error } = await supabase
+        .from("github_repos")
+        .select("*");
+
+      if (error) {
+        console.error("Supabase error:", error);
+        return;
+      }
+
+      if (github_repos && github_repos.length > 0) {
+        const updatedRepos = await fetchMultipleRepoDetails(github_repos);
+        console.log("Updated repos:", updatedRepos);
+        setProjects(updatedRepos as any);
+      } else {
+        setProjects([]);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (userSecure?.token) {
+      getRepoitories();
+    }
+  }, [userSecure?.token]); // Add dependency
+
+  useEffect(() => {
+    const filtered = projects.filter(
+      (project) =>
+        project.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.url?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.repo?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredProjects(filtered);
+  }, [searchQuery, projects]);
 
   return (
     <div className="h-screen bg-background pt-8 px-8">
@@ -187,9 +176,9 @@ export default function ProjectsPage() {
 
       <RepositoryDisplay projects={filteredProjects} viewMode={viewMode} />
 
-      {/* GitHub Import Dialog */}
       <GitHubImportDialog
         username={userSecure?.username || ""}
+        userId={userSecure?.id || ""}
         token={userSecure?.token || ""}
         isOpen={isGitHubDialogOpen}
         onOpenChange={setIsGitHubDialogOpen}

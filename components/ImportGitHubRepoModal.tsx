@@ -18,6 +18,7 @@ import { useGitHubRepos } from "@/hooks/useGitHubRepos";
 import Image from "next/image";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { formatSmartDate } from "@/utils/formatSmartDate";
+import { supabase } from "@/lib/supabaseClient";
 
 interface RepoOwner {
   login: string;
@@ -25,6 +26,10 @@ interface RepoOwner {
 }
 
 export interface Repo {
+  full_name: any;
+  default_branch: any;
+  permissions: any;
+  forks_count: any;
   id: number;
   name: string;
   description: string | null;
@@ -42,6 +47,7 @@ interface GitHubImportDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onImport?: (repoName: string) => void;
+  userId: string;
 }
 
 export function GitHubImportDialog({
@@ -50,6 +56,7 @@ export function GitHubImportDialog({
   isOpen,
   onOpenChange,
   onImport,
+  userId,
 }: GitHubImportDialogProps) {
   const [selectedRepoName, setSelectedRepoName] = useState<string>("");
   const [selectedRepoObject, setSelectedRepoObject] = useState<Repo | null>(
@@ -61,15 +68,40 @@ export function GitHubImportDialog({
     token,
   });
 
-  const handleImport = (e: React.FormEvent) => {
+  const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedRepoName && onImport) {
-        console.log(selectedRepoObject);
-      onImport(selectedRepoName);
-      onOpenChange(false);
+    if (!selectedRepoObject) return;
+
+    const repoToInsert = {
+      id: selectedRepoObject.id,
+      user_id: userId,
+      name: selectedRepoObject.name,
+      full_name: selectedRepoObject.full_name,
+      owner_login: selectedRepoObject.owner.login,
+      html_url: selectedRepoObject.html_url,
+      description: selectedRepoObject.description,
+      private: selectedRepoObject.private,
+      default_branch: selectedRepoObject.default_branch,
+      permissions: selectedRepoObject.permissions,
+      stargazers_count: selectedRepoObject.stargazers_count,
+      forks_count: selectedRepoObject.forks_count,
+      language: selectedRepoObject.language,
+      last_fetched_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from("github_repos")
+      .upsert([repoToInsert]);
+
+    if (error) {
+      console.error("Error importing repo:", error);
+    } else {
+      console.log("Repo imported successfully:", data);
+      if (onImport) onImport(selectedRepoObject.full_name);
       setSelectedRepoName("");
       setSelectedRepoObject(null);
       setSearch("");
+      onOpenChange(false);
     }
   };
 

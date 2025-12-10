@@ -19,12 +19,20 @@ interface AuthUser {
   metadata: UserMetadata | null;
 }
 
+interface AuthUserSercure {
+  email: string;
+  username: string | null;
+  token: string | null;
+  metadata: UserMetadata | null;
+  id: string;
+}
+
 const USER_CACHE_KEY = "cached_user_data";
 
 export function useAuthUser() {
   const supabase = createClient();
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [userSecure, setUserSecure] = useState<AuthUser | null>(null);
+  const [userSecure, setUserSecure] = useState<AuthUserSercure | null>(null);
   const [loading, setLoading] = useState(true);
   const [isHydrated, setIsHydrated] = useState(false);
   const isLoadingRef = useRef(false);
@@ -69,7 +77,6 @@ export function useAuthUser() {
         const metadata = authUser.user_metadata as UserMetadata;
         const token = session.provider_token ?? null;
 
-
         const userInfo: AuthUser = {
           email: authUser.email ?? "",
           username: metadata?.user_name ?? null,
@@ -77,7 +84,15 @@ export function useAuthUser() {
           token,
         };
 
-        setUserSecure(userInfo);
+        const userSecureInfo: AuthUserSercure = {
+          email: authUser.email ?? "",
+          username: metadata?.user_name ?? null,
+          metadata,
+          token,
+          id: authUser.id ?? "",
+        };
+
+        setUserSecure(userSecureInfo);
 
         setUser(userInfo);
 

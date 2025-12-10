@@ -1,18 +1,17 @@
 import React from "react";
 import { GitBranch, Calendar, ExternalLink, MoreVertical } from "lucide-react";
 
-interface Project {
+interface GitHubRepo {
   id: number;
   name: string;
   url: string;
   repo: string;
   lastDeploy: string;
   branch: string;
-  status: "ready" | "error";
 }
 
 interface RepositoryDisplayProps {
-  projects: Project[];
+  projects: GitHubRepo[];
   viewMode: "grid" | "list";
 }
 
@@ -70,9 +69,6 @@ export default function RepositoryDisplay({
                 </div>
               </div>
             </div>
-            <div className="px-4 py-3 border-t">
-              <StatusBadge status={project.status} />
-            </div>
           </div>
         ))}
       </div>
@@ -114,10 +110,6 @@ export default function RepositoryDisplay({
                 <div className="flex items-center gap-2 text-sm text-gray-600 min-w-[100px]">
                   <Calendar className="h-4 w-4" />
                   <span>{project.lastDeploy}</span>
-                </div>
-
-                <div className="min-w-[80px]">
-                  <StatusBadge status={project.status} />
                 </div>
               </div>
 
