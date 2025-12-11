@@ -129,16 +129,7 @@ export default function ProjectsPage() {
 
       <h1 className="font-medium text-sm mt-4">Repositories</h1>
 
-      <RepositoryDisplay projects={filteredProjects} viewMode={viewMode} />
-
-      {/* <GitHubImportDialog
-        username={user?.username || ""}
-        userId={user?.id || ""}
-        token={""}
-        isOpen={isGitHubDialogOpen}
-        onOpenChange={setIsGitHubDialogOpen}
-        onImport={handleGitHubImport}
-      /> */}
+      <RepositoryDisplay repos={repos} viewMode={viewMode} />
     </div>
   );
 }

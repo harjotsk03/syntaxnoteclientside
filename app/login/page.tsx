@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
   const [gitHubLoading, setGitHubLoading] = useState(false);
   const [lastLoginUsed, setLastLoginUsed] = useState<string | null>(null);
 
@@ -46,6 +47,8 @@ export default function LoginPage() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setEmailLoading(true);
+    localStorage.setItem("lastLoginUsed", "email");
 
     try {
       const response = await fetch("http://127.0.0.1:8000/login", {
@@ -119,13 +122,21 @@ export default function LoginPage() {
             <Label htmlFor="email" className="text-white text-sm">
               Email
             </Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder=""
-            />
+            <div className="relative">
+              {lastLoginUsed === "email" && (
+                <span className="absolute -top-6 right-4 bg-green-900 text-chart-2 z-50 text-xs px-2.5 py-1 rounded-t-sm">
+                  Last used
+                </span>
+              )}
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder=""
+                className="relative"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -156,6 +167,7 @@ export default function LoginPage() {
           </div>
 
           <Button type="submit" className="w-full hover:cursor-pointer">
+            {emailLoading && <Spinner />}
             Sign in
           </Button>
         </form>

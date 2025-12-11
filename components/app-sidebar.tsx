@@ -18,8 +18,6 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { user, loading } = useAuthUser();
 
-  console.log(user);
-
   // Construct a team object with fallback values
   const team = {
     name: user?.email.split("@")[0] || "User", // fallback to email prefix
