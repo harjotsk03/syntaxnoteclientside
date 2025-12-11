@@ -25,6 +25,7 @@ import { GitHubImportDialog } from "@/components/ImportGitHubRepoModal";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { supabase } from "@/lib/supabaseClient";
 import { useGitHubRepos } from "@/hooks/useGitHubRepos";
+import { useMyRepos } from "@/hooks/useMyRepos";
 
 interface GitHubRepo {
   id: number;
@@ -37,61 +38,15 @@ interface GitHubRepo {
 }
 
 export default function ProjectsPage() {
-  const { userSecure } = useAuthUser();
+  const { user } = useAuthUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [projects, setProjects] = useState<GitHubRepo[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<GitHubRepo[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isGitHubDialogOpen, setIsGitHubDialogOpen] = useState(false);
+  const { repos, loading, error } = useMyRepos();
 
-  // Fix: Pass as an object with username and token properties
-  const { fetchRepoDetails, fetchMultipleRepoDetails } = useGitHubRepos({
-    username: userSecure?.username || null,
-    token: userSecure?.token || null,
-  });
-
-  const handleGitHubImport = (repoName: string) => {
-    console.log("Importing repo:", repoName);
-  };
-
-  const getRepoitories = async () => {
-    try {
-      let { data: github_repos, error } = await supabase
-        .from("github_repos")
-        .select("*");
-
-      if (error) {
-        console.error("Supabase error:", error);
-        return;
-      }
-
-      if (github_repos && github_repos.length > 0) {
-        const updatedRepos = await fetchMultipleRepoDetails(github_repos);
-        console.log("Updated repos:", updatedRepos);
-        setProjects(updatedRepos as any);
-      } else {
-        setProjects([]);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  useEffect(() => {
-    if (userSecure?.token) {
-      getRepoitories();
-    }
-  }, [userSecure?.token]); // Add dependency
-
-  useEffect(() => {
-    const filtered = projects.filter(
-      (project) =>
-        project.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.url?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.repo?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredProjects(filtered);
-  }, [searchQuery, projects]);
+  console.log(repos);
 
   return (
     <div className="h-screen bg-background pt-8 px-8">
@@ -176,14 +131,14 @@ export default function ProjectsPage() {
 
       <RepositoryDisplay projects={filteredProjects} viewMode={viewMode} />
 
-      <GitHubImportDialog
-        username={userSecure?.username || ""}
-        userId={userSecure?.id || ""}
-        token={userSecure?.token || ""}
+      {/* <GitHubImportDialog
+        username={user?.username || ""}
+        userId={user?.id || ""}
+        token={""}
         isOpen={isGitHubDialogOpen}
         onOpenChange={setIsGitHubDialogOpen}
         onImport={handleGitHubImport}
-      />
+      /> */}
     </div>
   );
 }

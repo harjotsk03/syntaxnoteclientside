@@ -42,14 +42,11 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const router = useRouter();
-  const supabase = createClient();
   const { theme, setTheme } = useTheme();
 
   const handleLogOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (!error) {
-      router.push("/login");
-    }
+    localStorage.removeItem("jwt");
+    router.push("/login");
   };
 
   return (

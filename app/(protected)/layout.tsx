@@ -1,29 +1,37 @@
-// app/(protected)/layout.tsx (protected layout)
+"use client"; // Needed to use hooks and localStorage
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { createClient } from "@/utils/supabase/server";
-import { redirect } from "next/navigation";
 
-export default async function ProtectedLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const supabase = await createClient();
+export default function ProtectedLayoutClient({ children }: { children: React.ReactNode }) {
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  useEffect(() => {
+    const checkAuth = async () => {
+      const jwt = localStorage.getItem("jwt");
 
-  if (!user) {
-    redirect("/login");
+      if (!jwt) {
+        router.replace("/login");
+      } else {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  if (loading) {
+    return;
   }
 
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <main className="">{children}</main>
+        <main>{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

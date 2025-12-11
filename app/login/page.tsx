@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Eye, Github } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
   const supabase = createClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,10 +46,32 @@ export default function LoginPage() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      if (!response.ok) {
+        // Handle HTTP errors
+        const errorData = await response.json();
+        console.error("Login failed:", errorData);
+        return;
+      }
+
+      const data = await response.json();
+      localStorage.setItem("jwt", data.access_token);
+      router.push("/repositories");
+    } catch (error) {
+      console.error("Error logging in:", error);
+    }
   };
 
   return (

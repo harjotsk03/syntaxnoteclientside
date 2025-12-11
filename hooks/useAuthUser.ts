@@ -1,54 +1,30 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { createClient } from "@/utils/supabase/client";
-
-interface UserMetadata {
-  name: string;
-  user_name: string;
-  avatar_url: string;
-  bio: string;
-  public_repos: number;
-  followers: number;
-}
 
 interface AuthUser {
   email: string;
-  username: string | null;
-  token: string | null;
-  metadata: UserMetadata | null;
-}
-
-interface AuthUserSercure {
-  email: string;
-  username: string | null;
-  token: string | null;
-  metadata: UserMetadata | null;
   id: string;
 }
 
 const USER_CACHE_KEY = "cached_user_data";
 
 export function useAuthUser() {
-  const supabase = createClient();
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [userSecure, setUserSecure] = useState<AuthUserSercure | null>(null);
   const [loading, setLoading] = useState(true);
   const [isHydrated, setIsHydrated] = useState(false);
   const isLoadingRef = useRef(false);
 
-  // Handle hydration
+  // Handle hydration and load cache
   useEffect(() => {
     setIsHydrated(true);
-
-    // Load from cache after hydration
     try {
       const cached = localStorage.getItem(USER_CACHE_KEY);
       if (cached) {
         setUser(JSON.parse(cached));
       }
     } catch {
-      // Ignore cache errors
+      // ignore cache errors
     }
   }, []);
 
@@ -58,75 +34,53 @@ export function useAuthUser() {
     isLoadingRef.current = true;
 
     async function loadUser() {
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        setUser(null);
+        localStorage.removeItem(USER_CACHE_KEY);
+        setLoading(false);
+        isLoadingRef.current = false;
+        return;
+      }
+
       try {
-        const [{ data: userData }, { data: sessionData }] = await Promise.all([
-          supabase.auth.getUser(),
-          supabase.auth.getSession(),
-        ]);
+        const response = await fetch("http://127.0.0.1:8000/me", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-        const authUser = userData.user;
-        const session = sessionData.session;
-
-        if (!authUser || !session) {
+        if (!response.ok) {
           setUser(null);
           localStorage.removeItem(USER_CACHE_KEY);
           setLoading(false);
+          isLoadingRef.current = false;
           return;
         }
 
-        const metadata = authUser.user_metadata as UserMetadata;
-        const token = session.provider_token ?? null;
-
-        const userInfo: AuthUser = {
-          email: authUser.email ?? "",
-          username: metadata?.user_name ?? null,
-          metadata,
-          token,
+        const data = await response.json();
+        const authUser: AuthUser = {
+          email: data.email,
+          id: data.user_id,
         };
 
-        const userSecureInfo: AuthUserSercure = {
-          email: authUser.email ?? "",
-          username: metadata?.user_name ?? null,
-          metadata,
-          token,
-          id: authUser.id ?? "",
-        };
-
-        setUserSecure(userSecureInfo);
-
-        setUser(userInfo);
-
-        const cacheData = {
-          email: userInfo.email,
-          username: userInfo.username,
-          metadata: userInfo.metadata,
-          token: null,
-        };
-        localStorage.setItem(USER_CACHE_KEY, JSON.stringify(cacheData));
+        setUser(authUser);
+        localStorage.setItem(USER_CACHE_KEY, JSON.stringify(authUser));
         setLoading(false);
+        isLoadingRef.current = false;
       } catch (error) {
         console.error("Error loading user:", error);
+        setUser(null);
+        localStorage.removeItem(USER_CACHE_KEY);
         setLoading(false);
+        isLoadingRef.current = false;
       }
     }
 
     loadUser();
+  }, [isHydrated]);
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") {
-        setUser(null);
-        localStorage.removeItem(USER_CACHE_KEY);
-      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        isLoadingRef.current = false;
-        loadUser();
-      }
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
-      isLoadingRef.current = false;
-    };
-  }, [supabase, isHydrated]);
-
-  return { user, userSecure, loading };
+  return { user, loading };
 }

@@ -18,9 +18,12 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { user, loading } = useAuthUser();
 
+  console.log(user);
+
+  // Construct a team object with fallback values
   const team = {
-    name: user?.metadata?.name || user?.username || "User",
-    logo: user?.metadata?.avatar_url || "",
+    name: user?.email.split("@")[0] || "User", // fallback to email prefix
+    logo: "", // you could add default avatar URL here if you have one
     plan: "Personal",
   };
 
@@ -46,7 +49,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter>
         {loading && !user ? (
           <div className="flex items-center gap-2 px-2 py-1.5">
-            <div className="size-8 rounded-lg bg-background animate-pulse" />
+            <div className="h-8 w-8 rounded-lg bg-background animate-pulse" />
             <div className="flex-1 space-y-2">
               <div className="h-4 w-24 bg-background rounded animate-pulse" />
               <div className="h-3 w-32 bg-background rounded animate-pulse" />
